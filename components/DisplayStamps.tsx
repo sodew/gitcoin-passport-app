@@ -2,7 +2,6 @@ import { Gorditas } from 'next/font/google';
 import { useState, useEffect } from 'react';
 import CSS from 'csstype';
 
-
 interface Props {
     headers?: Record<string, string>;
     currentAddress?: string; 
@@ -48,6 +47,7 @@ export const DisplayStamps = ({ headers, currentAddress}: Props) => {
             console.log('error: ', err);
         }
     };
+    
     // If SCORER_ID or headers or currentAddress is undefined, display a message
     if ( !headers || !currentAddress) {
         return (
