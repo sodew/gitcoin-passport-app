@@ -53,7 +53,7 @@ export const SecretMessage = ({ SCORER_ID, headers, currentAddress, threshold}: 
     if (newScore >= threshold) {
         return (
             <div>
-                <h2>Congrats! You can view the secret message</h2>
+                <h2>Your score {newScore} is above the threshold {threshold}</h2>
             </div>
         )
     }

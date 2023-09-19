@@ -1,23 +1,35 @@
+import { Gorditas } from 'next/font/google';
 import { useState, useEffect } from 'react';
+import CSS from 'csstype';
 
 
 interface Props {
     headers?: Record<string, string>;
     currentAddress?: string; 
   }
-  
+
+interface Stamp {
+    version: string,
+    credential: Record<string, any>,
+    metadata: Record<string, any>
+}
+
+const ONCHAIN_GROUPS = ["Lens Handle", "zkSync 1.0", "NFT Holder", "Self GTC Staking", "Snapshot Voter", "Transactions", "Contributed to...", "Gas fees spent", "GTC possessions", 'Lens', 'POAP', 'Ens', 'NFT', 'EthGTEOneTxnProvider', 'FirstEthTxnProvider',  ]
+const ONCHAIN_STAMP_NAMES = ['Ens', 'POAP']
+
 export const DisplayStamps = ({ headers, currentAddress}: Props) => {
-    const [stamps, setStamps] = useState<string>('')
+    const [stamps, setStamps] = useState<Stamp[]>([])
     const [noStampMessage, setNoStampMessage] = useState<string>('') 
     
     useEffect(() => {
         if(headers && currentAddress) {
             fetchScore();
         }
-    }, []);
+    }, [headers, currentAddress]);
+
 
     const fetchScore = async () => {
-        const GET_PASSPORT_STAMPS_URI = `https://api.scorer.gitcoin.co/registry/stamps/${currentAddress}`;
+        const GET_PASSPORT_STAMPS_URI = `https://api.scorer.gitcoin.co/registry/stamps/${currentAddress}?limit=1000&include_metadata=true`;
 
         try {
             const response = await fetch(GET_PASSPORT_STAMPS_URI, {
@@ -26,9 +38,9 @@ export const DisplayStamps = ({ headers, currentAddress}: Props) => {
 
             const passportData = await response.json();
 
-            if (passportData) {
-                console.log(passportData)
-                setStamps(JSON.stringify(passportData.items[0]))
+            if (passportData && passportData.items) {
+                console.log(passportData.items)
+                setStamps(passportData.items)
             } else {
                 setNoStampMessage('No stamps available, please submit your passport after you have added some stamps.');
             }
@@ -54,15 +66,61 @@ export const DisplayStamps = ({ headers, currentAddress}: Props) => {
     }
 
     return (
-    <div>
-        <h2 style={styles.h2}>{stamps}</h2>
-    </div>
+        <div>
+        <div style={styles.stampGrid}>
+            {stamps.map((stamp, index) => {
+                if (ONCHAIN_GROUPS.includes(stamp.metadata.group) || ONCHAIN_STAMP_NAMES.includes(stamp.metadata.name)) {
+                    return (
+                        <div key={index} style={styles.stampBox}>
+                            {stamp.metadata.platform && <img style={{width: 50}} src={stamp.metadata.platform.icon} alt='Platform Icon'/>}
+                            <h3 style={styles.h3}>{stamp.metadata.name}</h3>
+                            <ul style={{paddingLeft: '20px', color: 'purple'}}>
+                                <li style={styles.li}>{stamp.metadata.description}</li>
+                            </ul>
+                            {/* <p  style={styles.p}>{stamp.metadata.description}</p> */}
+                        </div>
+                    )
+                }
+            })}
+            {/* {stamps.map((stamp, index) => (
+                <div key={index} style={styles.stampBox}>
+                    {stamp.metadata.platform && <img style={{width: 50}} src={stamp.metadata.platform.icon} alt='Platform Icon'/>}
+                    <h3 style={styles.h3}>{stamp.metadata.name}</h3>
+                    <p  style={styles.p}>{stamp.metadata.description}</p>
+                </div>
+            ))} */}
+        </div>
+        </div>
     )
 }
 
 const styles = {
     h2: {
         fontSize: 12,
-        fontWeight: 'normal'
+        fontWeight: 'normal',
+        color: 'white'
+    },
+    h3: {
+        color: 'white'
+    },
+    p: {
+        color: 'white'
+    },
+    li: {
+        color: 'white'
+    },
+    stampGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+        gap: '20px',
+        marginTop: 20
+    },
+    stampBox: {
+        border: '2px solid #6935FF',
+        background: '#0C110F',
+        padding: '20px',
+    },
+    a: {
+        color: '#6F3FF5'
     }
 }

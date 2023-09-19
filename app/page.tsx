@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import { CheckScore } from '../components/CheckScore'
 import { SecretMessage } from '../components/SecretMessage'
-import { DisplayStamps } from '@/components/DisplayStamps'
+//import { DisplayStamps } from '@/components/DisplayStamps'
+import { Stint_Ultra_Condensed } from 'next/font/google'
+import { PassportScore } from '../components/PassportScore'
+
+import { DisplayStamps } from 'passport-quick-start'
 
 // these lines read the API key and scorer ID from your .env.local file
 const APIKEY = process.env.NEXT_PUBLIC_GC_API_KEY
@@ -36,165 +40,63 @@ export default function Passport() {
   const [connected, setConnected] = useState<boolean>(false)
   const [score, setScore] = useState<string>('')
   const [noScoreMessage, setNoScoreMessage] = useState<string>('')
+  //const [userAddress, setUserAddress] = useState<string>('')
 
-  /* todo check user's connection when the app loads */
-  async function connect() {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
-      setAddress(accounts[0])
-      setConnected(true)
-      checkPassport(accounts[0])
-    } catch (err) {
-      console.log('error connecting...')
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddress(e.target.value);
+    console.log(address);
+  };
+
+  const submitWallet = () => {
+    if(address){
+      setConnected(true);
     }
-  }
-
-  useEffect(() => {
-    checkConnection()
-    async function checkConnection() {
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const accounts = await provider.listAccounts()
-        // if the user is connected, set their account and fetch their score
-        if (accounts && accounts[0]) {
-          setConnected(true)
-          setAddress(accounts[0].address)
-          checkPassport(accounts[0].address)
-        }
-      } catch (err) {
-        console.log('not connected...')
-      }
-    }
-  }, [])
-  
-  /* todo connect user's wallet */
-
-  /* todo check user's passport */
-
-  async function checkPassport(currentAddress = address) {
-    setScore('')
-    setNoScoreMessage('')
-    // 
-    const GET_PASSPORT_SCORE_URI = `https://api.scorer.gitcoin.co/registry/score/${SCORER_ID}/${currentAddress}`
-    try {
-      const response = await fetch(GET_PASSPORT_SCORE_URI, {
-        headers
-      })
-      const passportData = await response.json()
-      if (passportData.score) {
-        // if the user has a score, round it and set it in the local state
-        const roundedScore = Math.round(passportData.score * 100) / 100
-        setScore(roundedScore.toString())
-      } else {
-        // if the user has no score, display a message letting them know to submit thier passporta
-        console.log('No score available, please add stamps to your passport and then resubmit.')
-        setNoScoreMessage('No score available, please submit your passport after you have added some stamps.')
-      }
-    } catch (err) {
-      console.log('error: ', err)
-    }
-  }
-
-  /* todo get signing message from API */
-
-  /* todo submit passport for scoring */
-
-  async function getSigningMessage() {
-    try {
-      const response = await fetch(SIGNING_MESSAGE_URI, {
-        headers
-      })
-      const json = await response.json()
-      return json
-    } catch (err) {
-      console.log('error: ', err)
-    }
-  }
-
-  async function submitPassport() {
-    setNoScoreMessage('')
-    try {
-      // call the API to get the signing message and the nonce
-      const { message, nonce } = await getSigningMessage()
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      // ask the user to sign the message
-      const signature = await signer.signMessage(message)
-      
-      // call the API, sending the signing message, the signature, and the nonce
-      const response = await fetch(SUBMIT_PASSPORT_URI, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          address,
-          scorer_id: SCORER_ID,
-          signature,
-          nonce
-        })
-      })
-
-      const data = await response.json()
-      console.log('data:', data)
-    } catch (err) {
-      console.log('error: ', err)
-    }
+    console.log(address);
   }
 
   return (
     /* this is the UI for the app */
     <div style={styles.main}>
-      <h1 style={styles.heading}>Gitcoin Passport Components</h1>
-      {/* <p style={styles.configurePassport}>Configure your passport <a style={styles.linkStyle} target="_blank" href="https://passport.gitcoin.co/#/dashboard">here</a></p> */}
-      {/* <h2 style={styles.configurePassport}>Connect Wallet Component</h2> */}
+      <h1 style={styles.heading}>Are they human? 👀</h1>
+      <h3 style={styles.h3}>Input a wallet address and we'll tell you how uniquely human that address is... or if it's a bot!</h3>
 
       <div style={styles.buttonContainer}>
       {
         !connected && (
-          <div>
-            <h2 style={styles.h2}>Connect Wallet Component</h2>
-            <button style={styles.buttonStyle} onClick={connect}>Connect Wallet</button>
+          <div style={styles.walletContainer}>
+            <label style={{fontWeight: '600'}}>Wallet address: </label>
+            <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
+              <input style={styles.input} type="text" placeholder='ex: 0x47...ek63' value={address} onChange={handleChange}/>
+              <button style={styles.buttonStyle} onClick={submitWallet}>Submit Wallet</button>
+            </div>
           </div>
         )
       }
       {
-        score && (
+        connected && (
           <div>
             <div style={styles.componentContainer}>
-              <h2 style={styles.h2}>Display score component</h2>
-              <CheckScore SCORER_ID={SCORER_ID} headers={headers} currentAddress={address} />
+              <h2 style={styles.h2}>Humanity Score Checker:</h2>
+              <PassportScore SCORER_ID={SCORER_ID} headers={headers} currentAddress={address} />
             </div>
             
             <div style={styles.componentContainer}>
-              <h2 style={styles.h2}>Secret message component</h2>
-              <SecretMessage SCORER_ID={SCORER_ID} headers={headers} currentAddress={address} threshold={15}/>
-            </div>
-
-            <div style={styles.componentContainer}>
-              <h2 style={styles.h2}>Display stamps component</h2>
-              <DisplayStamps headers={headers} currentAddress={address} />
+              <h2 style={{...styles.h2, marginBottom: 0}}>Identity Validation Stamps:</h2>
+              <a style={styles.a} href={'https://docs.passport.gitcoin.co/overview/introducing-gitcoin-passport'}>What are stamps?</a>
+              <DisplayStamps headers={headers} currentAddress={address}/>
+              {/* <PassportGate SCORER_ID={SCORER_ID} headers={headers} currentAddress={address} threshold={15}/> */}
             </div>
           </div>
         )
-      }
-      {/* {
-        connected && (
-          <div style={styles.buttonContainer}>
-            <button style={styles.buttonStyle} onClick={submitPassport}>Submit Passport</button>
-            <button style={styles.buttonStyle} onClick={() => checkPassport()}>Check passport score</button>
-            <CheckScore SCORER_ID={SCORER_ID} headers={headers} currentAddress={address} />
-            <SecretMessage SCORER_ID={SCORER_ID} headers={headers} currentAddress={address} threshold={15}/>
-          </div>
-        )
-      } */}
-      {
-        noScoreMessage && (<p style={styles.noScoreMessage}>{noScoreMessage}</p>)
       }
       </div>
     </div>
+
+
   )
 }
 
-const styles = {
+const styles: Record<string, React.CSSProperties> = {
   main: {
     width: '900px',
     margin: '0 auto',
@@ -202,15 +104,34 @@ const styles = {
     backgroundColor: '#ffffff'
   },
   heading: {
-    fontSize: 60
+    fontSize: 56,
+    margin: 0
   },
   intro: {
     fontSize: 18,
     //color: 'rgba(0, 0, 0, .2)'
   },
+  a: {
+    color: '#6F3FF5'
+  },
   h2: {
     fontSize: 24,
     fontWeight: '500'
+  },
+  h3: {
+    fontWeight: '400'
+  },
+  walletContainer: {
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  input: {
+    width: '75%',
+    padding: '10px',
+    marginTop: '8px',
+    backgroundColor: '#F7F8F9',
+    border: 'solid #E7E8EB',
+    borderRadius: '3px'
   },
   configurePassport: {
     marginTop: 20,
@@ -219,14 +140,15 @@ const styles = {
     color: '#008aff'
   },
   buttonContainer: {
-    marginTop: 20
+    marginTop: 50
   },
   buttonStyle: {
-    padding: '10px 30px',
+    padding: '12px 40px',
     outline: 'none',
     border: 'none',
     cursor: 'pointer',
-    marginRight: '10px',
+    marginTop: '10px',
+    marginLeft: '10px',
     background: "#6935FF",
     borderRadius: "4px",
     color: "#ffffff"
